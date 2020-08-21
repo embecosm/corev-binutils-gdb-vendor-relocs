@@ -2548,6 +2548,23 @@
 #define MATCH_CV_SHRR      0x2a00302b
 #define MASK_CV_SWRR       0xfe00707f
 #define MATCH_CV_SWRR      0x2c00302b
+/* Vendor-specific (CORE-V) Xcvhwlp instructions. */
+#define MASK_CV_START  0xfff07f7f
+#define MASK_CV_STARTI 0xfff7f
+#define MASK_CV_END    0xfff07f7f
+#define MASK_CV_ENDI   0xfff7f
+#define MASK_CV_COUNT  0xfff07f7f
+#define MASK_CV_COUNTI 0xfff7f
+#define MASK_CV_SETUP  0x7f7f
+#define MASK_CV_SETUPI 0x7f7f
+#define MATCH_CV_START  0x412b
+#define MATCH_CV_STARTI 0x402b
+#define MATCH_CV_END    0x432b
+#define MATCH_CV_ENDI   0x422b
+#define MATCH_CV_COUNT  0x452b
+#define MATCH_CV_COUNTI 0x442b
+#define MATCH_CV_SETUP  0x472b
+#define MATCH_CV_SETUPI 0x462b
 /* Vendor-specific (T-Head) XTheadBa instructions.  */
 #define MATCH_TH_ADDSL 0x0000100b
 #define MASK_TH_ADDSL 0xf800707f
