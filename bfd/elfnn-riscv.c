@@ -1824,6 +1824,9 @@ perform_relocation (const reloc_howto_type *howto,
       }
       return bfd_reloc_overflow;
 
+    /* Relocation handling prototype */
+    /* Placeholder for now, but might want to encode here. */
+
     case R_RISCV_LO12_I:
     case R_RISCV_GPREL_I:
     case R_RISCV_TPREL_LO12_I:
@@ -2587,6 +2590,11 @@ riscv_elf_relocate_section (bfd *output_bfd,
 	case R_RISCV_CVPCREL_UI12:
 	  /* These require no special handling beyond perform_relocation.  */
 	  break;
+
+	/* Relocation handling prototype */
+  case R_RISCV_RELOCID:
+    /* Shouldn't require any special handling, WIP */
+    break;
 
 	case R_RISCV_SET_ULEB128:
 	  if (uleb128_set_rel == NULL)

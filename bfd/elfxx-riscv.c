@@ -907,7 +907,22 @@ static reloc_howto_type howto_table[] =
 	 false,				/* partial_inplace */
 	 0,				/* src_mask */
 	 ENCODE_CV_HWLP_UIMM5 (-1U),	/* dst_mask */
-	 true)				/* pcrel_offset */
+	 true),				/* pcrel_offset */
+
+  /* Relocation handling prototype */
+  HOWTO (R_RISCV_RELOCID,		/* type */
+	 0,				/* rightshift */
+	 1,				/* size */
+	 32,				/* bitsize */
+	 false,				/* pc_relative */
+	 0,				/* bitpos */
+	 complain_overflow_unsigned,	/* complain_on_overflow */
+	 bfd_elf_generic_reloc,		/* special_function */
+	 "R_RISCV_RELOCID",	/* name */
+	 false,				/* partial_inplace */
+	 0,				/* src_mask */
+	 0,	/* dst_mask */
+	 false),				/* pcrel_offset */
 };
 
 static reloc_howto_type howto_table_internal[] =
@@ -1054,6 +1069,8 @@ static const struct elf_reloc_map riscv_reloc_map[] =
   /* CORE-V Specific.  */
   { BFD_RELOC_RISCV_CVPCREL_UI12, R_RISCV_CVPCREL_UI12 },
   { BFD_RELOC_RISCV_CVPCREL_URS1, R_RISCV_CVPCREL_URS1 },
+  /* Relocation handling prototype */
+  { BFD_RELOC_RISCV_RELOCID, R_RISCV_RELOCID },
 };
 
 reloc_howto_type *
