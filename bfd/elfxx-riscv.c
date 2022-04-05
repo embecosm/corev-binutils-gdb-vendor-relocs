@@ -912,11 +912,11 @@ static reloc_howto_type howto_table[] =
   /* Relocation handling prototype */
   HOWTO (R_RISCV_RELOCID,		/* type */
 	 0,				/* rightshift */
-	 1,				/* size */
+	 3,				/* size */
 	 32,				/* bitsize */
 	 false,				/* pc_relative */
 	 0,				/* bitpos */
-	 complain_overflow_unsigned,	/* complain_on_overflow */
+	 complain_overflow_dont,	/* complain_on_overflow */
 	 bfd_elf_generic_reloc,		/* special_function */
 	 "R_RISCV_RELOCID",	/* name */
 	 false,				/* partial_inplace */

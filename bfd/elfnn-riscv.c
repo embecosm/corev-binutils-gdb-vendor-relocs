@@ -1789,7 +1789,9 @@ perform_relocation (const reloc_howto_type *howto,
   if (ELFNN_R_TYPE (rel->r_info) != R_RISCV_SUB_ULEB128)
     value += rel->r_addend;
 
-  switch (ELFNN_R_TYPE (rel->r_info))
+  int type = ELFNN_R_TYPE (rel->r_info);
+
+  switch (type)
     {
     case R_RISCV_HI20:
     case R_RISCV_TPREL_HI20:
@@ -1826,6 +1828,9 @@ perform_relocation (const reloc_howto_type *howto,
 
     /* Relocation handling prototype */
     /* Placeholder for now, but might want to encode here. */
+    case R_RISCV_RELOCID:
+      if (type == R_RISCV_CVPCREL_UI12)
+        // call function that implements functionality 
 
     case R_RISCV_LO12_I:
     case R_RISCV_GPREL_I:
@@ -2589,12 +2594,8 @@ riscv_elf_relocate_section (bfd *output_bfd,
 	case R_RISCV_CVPCREL_URS1:
 	case R_RISCV_CVPCREL_UI12:
 	  /* These require no special handling beyond perform_relocation.  */
-	  break;
-
-	/* Relocation handling prototype */
   case R_RISCV_RELOCID:
-    /* Shouldn't require any special handling, WIP */
-    break;
+	  break;
 
 	case R_RISCV_SET_ULEB128:
 	  if (uleb128_set_rel == NULL)

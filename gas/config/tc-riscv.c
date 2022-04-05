@@ -4996,6 +4996,8 @@ md_apply_fix (fixS *fixP, valueT *valP, segT seg ATTRIBUTE_UNUSED)
   unsigned int subtype;
   bfd_byte *buf = (bfd_byte *) (fixP->fx_frag->fr_literal + fixP->fx_where);
   bool relaxable = false;
+  //WIP
+  bool pretend_im_corevid = false;
   offsetT loc;
   segT sub_segment;
 
@@ -5035,6 +5037,8 @@ md_apply_fix (fixS *fixP, valueT *valP, segT seg ATTRIBUTE_UNUSED)
     /* cvt_frag_to_fill () has called output_leb128 ().  */
     case BFD_RELOC_RISCV_SET_ULEB128:
     case BFD_RELOC_RISCV_SUB_ULEB128:
+    // WIP
+    case BFD_RELOC_RISCV_RELOCID:
       break;
 
     case BFD_RELOC_RISCV_TPREL_HI20:
@@ -5187,6 +5191,7 @@ md_apply_fix (fixS *fixP, valueT *valP, segT seg ATTRIBUTE_UNUSED)
 
     /* CORE-V Specific.  */
     case BFD_RELOC_RISCV_CVPCREL_UI12:
+      pretend_im_corevid = true;
       if (fixP->fx_addsy)
 	{
 	  reloc_howto_type *howto;
@@ -5200,6 +5205,7 @@ md_apply_fix (fixS *fixP, valueT *valP, segT seg ATTRIBUTE_UNUSED)
       break;
 
     case BFD_RELOC_RISCV_CVPCREL_URS1:
+      pretend_im_corevid = true;
       if (fixP->fx_addsy)
 	{
 	  reloc_howto_type *howto;
@@ -5327,6 +5333,17 @@ md_apply_fix (fixS *fixP, valueT *valP, segT seg ATTRIBUTE_UNUSED)
       fixP->fx_next->fx_addsy = fixP->fx_next->fx_subsy = NULL;
       fixP->fx_next->fx_r_type = BFD_RELOC_RISCV_RELAX;
       fixP->fx_next->fx_size = 0;
+    }
+
+  /* Add a R_RISCV_RELOCID reloc to specify vendor.  */
+	//TODO
+  if (pretend_im_corevid && fixP->fx_tcbit && fixP->fx_addsy != NULL)
+    {
+      fixP->fx_next = xmemdup (fixP, sizeof (*fixP), sizeof (*fixP));
+      fixP->fx_next->fx_addsy = fixP->fx_next->fx_subsy = NULL;
+      fixP->fx_next->fx_r_type = BFD_RELOC_RISCV_RELOCID;
+      fixP->fx_next->fx_size = 0;
+      fixP->fx_next->fx_offset = 100;
     }
 }
 
