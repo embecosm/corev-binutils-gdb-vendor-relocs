@@ -909,7 +909,7 @@ static reloc_howto_type howto_table[] =
 	 ENCODE_CV_HWLP_UIMM5 (-1U),	/* dst_mask */
 	 true),				/* pcrel_offset */
 
-  /* Relocation handling prototype */
+  /* Relocation handling prototype. */
   HOWTO (R_RISCV_RELOCID,		/* type */
 	 0,				/* rightshift */
 	 3,				/* size */
@@ -921,7 +921,7 @@ static reloc_howto_type howto_table[] =
 	 "R_RISCV_RELOCID",	/* name */
 	 false,				/* partial_inplace */
 	 0,				/* src_mask */
-	 0,	/* dst_mask */
+	 ENCODE_ITYPE_IMM(-1U),	/* dst_mask */
 	 false),				/* pcrel_offset */
 };
 
@@ -1006,6 +1006,40 @@ static reloc_howto_type howto_table_internal[] =
 	 false),			/* pcrel_offset */
 };
 
+/* Prototype not currently being used, relates to RELOCID */
+static reloc_howto_type cv_howto_table[] = {
+  /* CORE-V Specific.  */
+  /* 12-bit PC-relative offset, for hwloop.  */
+  HOWTO (R_RISCV_CVPCREL_UI12,		/* type */
+	 2,				/* rightshift */
+	 2,				/* size */
+	 32,				/* bitsize */
+	 true,				/* pc_relative */
+	 0,				/* bitpos */
+	 complain_overflow_unsigned,	/* complain_on_overflow */
+	 bfd_elf_generic_reloc,		/* special_function */
+	 "R_RISCV_CVPCREL_UI12",	/* name */
+	 false,				/* partial_inplace */
+	 0,				/* src_mask */
+	 ENCODE_ITYPE_IMM (-1U),	/* dst_mask */
+	 true),				/* pcrel_offset */
+
+  /* Unsigned 5-bit PC-relative offset, for hwloop.  */
+  HOWTO (R_RISCV_CVPCREL_URS1,		/* type */
+	 2,				/* rightshift */
+	 1,				/* size */
+	 32,				/* bitsize */
+	 true,				/* pc_relative */
+	 0,				/* bitpos */
+	 complain_overflow_unsigned,	/* complain_on_overflow */
+	 bfd_elf_generic_reloc,		/* special_function */
+	 "R_RISCV_CVPCREL_URS1",	/* name */
+	 false,				/* partial_inplace */
+	 0,				/* src_mask */
+	 ENCODE_CV_HWLP_UIMM5 (-1U),	/* dst_mask */
+	 true),				/* pcrel_offset */
+};
+
 /* A mapping from BFD reloc types to RISC-V ELF reloc types.  */
 struct elf_reloc_map
 {
@@ -1067,9 +1101,13 @@ static const struct elf_reloc_map riscv_reloc_map[] =
   { BFD_RELOC_RISCV_SET_ULEB128, R_RISCV_SET_ULEB128 },
   { BFD_RELOC_RISCV_SUB_ULEB128, R_RISCV_SUB_ULEB128 },
   /* CORE-V Specific.  */
-  { BFD_RELOC_RISCV_CVPCREL_UI12, R_RISCV_CVPCREL_UI12 },
-  { BFD_RELOC_RISCV_CVPCREL_URS1, R_RISCV_CVPCREL_URS1 },
-  /* Relocation handling prototype */
+  { BFD_RELOC_RISCV_CVPCREL_UI12,
+    (enum elf_riscv_reloc_type) R_RISCV_CVPCREL_UI12 },
+  { BFD_RELOC_RISCV_CVPCREL_URS1,
+    (enum elf_riscv_reloc_type) R_RISCV_CVPCREL_URS1 },
+  /* Relocation handling prototype. */
+  { BFD_RELOC_RISCV_CVPCREL_UI12_FAKE, R_RISCV_RELOCID },
+  { BFD_RELOC_RISCV_CVPCREL_URS1_FAKE, R_RISCV_RELOCID },
   { BFD_RELOC_RISCV_RELOCID, R_RISCV_RELOCID },
 };
 
@@ -1082,12 +1120,22 @@ riscv_reloc_name_lookup (bfd *abfd ATTRIBUTE_UNUSED, const char *r_name)
     if (howto_table[i].name && strcasecmp (howto_table[i].name, r_name) == 0)
       return &howto_table[i];
 
+  for (i = 0; i < ARRAY_SIZE (cv_howto_table); i++)
+    if (cv_howto_table[i].name &&
+        strcasecmp (cv_howto_table[i].name, r_name) == 0)
+      return &cv_howto_table[i];
+
   return NULL;
 }
 
 reloc_howto_type *
-riscv_elf_rtype_to_howto (bfd *abfd, unsigned int r_type)
+riscv_elf_rtype_to_howto (bfd *abfd, unsigned int r_type, unsigned int r_addend)
 {
+  static unsigned int current_vendor = 0;
+
+  if (r_type == R_RISCV_RELOCID && r_addend != 0)
+    current_vendor = r_addend;
+
   unsigned int i;
   for (i = 0; i < ARRAY_SIZE (howto_table); i++)
     {
@@ -1097,11 +1145,21 @@ riscv_elf_rtype_to_howto (bfd *abfd, unsigned int r_type)
   if (r_type < R_RISCV_max + ARRAY_SIZE (howto_table_internal))
     return &howto_table_internal[r_type - R_RISCV_max];
 
+  if (current_vendor == RISCV_VENDOR_CV)
+  {
+    for (i = 0; i < ARRAY_SIZE (cv_howto_table); i++)
+      {
+        if (r_type == cv_howto_table[i].type)
+          return &cv_howto_table[i];
+      }
+  }
+
   (*_bfd_error_handler) (_("%pB: unsupported relocation type %#x"),
 			 abfd, r_type);
   bfd_set_error (bfd_error_bad_value);
   return NULL;
 }
+
 
 /* Given a BFD reloc type, return a howto structure.  */
 
@@ -1113,7 +1171,7 @@ riscv_reloc_type_lookup (bfd *abfd,
 
   for (i = 0; i < ARRAY_SIZE (riscv_reloc_map); i++)
     if (riscv_reloc_map[i].bfd_val == code)
-      return riscv_elf_rtype_to_howto(abfd, riscv_reloc_map[i].elf_val);
+      return riscv_elf_rtype_to_howto(abfd, riscv_reloc_map[i].elf_val, 0);
 
   bfd_set_error (bfd_error_bad_value);
   return NULL;

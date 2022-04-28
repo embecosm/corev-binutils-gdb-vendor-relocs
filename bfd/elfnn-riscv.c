@@ -265,7 +265,8 @@ riscv_info_to_howto_rela (bfd *abfd,
 			  arelent *cache_ptr,
 			  Elf_Internal_Rela *dst)
 {
-  cache_ptr->howto = riscv_elf_rtype_to_howto (abfd, ELFNN_R_TYPE (dst->r_info));
+  cache_ptr->howto =
+    riscv_elf_rtype_to_howto (abfd, ELFNN_R_TYPE (dst->r_info), dst->r_addend);
   return cache_ptr->howto != NULL;
 }
 
@@ -715,7 +716,7 @@ riscv_elf_record_got_reference (bfd *abfd, struct bfd_link_info *info,
 static bool
 bad_static_reloc (bfd *abfd, unsigned r_type, struct elf_link_hash_entry *h)
 {
-  reloc_howto_type * r = riscv_elf_rtype_to_howto (abfd, r_type);
+  reloc_howto_type * r = riscv_elf_rtype_to_howto (abfd, r_type, 0);
 
   /* We propably can improve the information to tell users that they
      should be recompile the code with -fPIC or -fPIE, just like what
@@ -924,7 +925,7 @@ riscv_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 		    }
 
 		  reloc_howto_type *r_t =
-			riscv_elf_rtype_to_howto (abfd, r_type);
+			riscv_elf_rtype_to_howto (abfd, r_type, rel->r_addend);
 		  _bfd_error_handler
 		    (_("%pB: relocation %s against absolute symbol `%s' can "
 		       "not be used when making a shared object"),
@@ -966,7 +967,7 @@ riscv_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	      if (is_abs_symbol)
 		break;
 
-	      reloc_howto_type *r_t = riscv_elf_rtype_to_howto (abfd, r_type);
+	      reloc_howto_type *r_t = riscv_elf_rtype_to_howto (abfd, r_type, rel->r_addend);
 	      _bfd_error_handler
 		(_("%pB: relocation %s against non-absolute symbol `%s' can "
 		   "not be used in RVNN when making a shared object"),
@@ -1003,7 +1004,7 @@ riscv_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 		}
 	    }
 
-	  reloc_howto_type *r = riscv_elf_rtype_to_howto (abfd, r_type);
+	  reloc_howto_type *r = riscv_elf_rtype_to_howto (abfd, r_type, rel->r_addend);
 	  if (RISCV_NEED_DYNAMIC_RELOC (r->pc_relative, info, h, sec))
 	    {
 	      struct elf_dyn_relocs *p;
@@ -1774,6 +1775,29 @@ riscv_global_pointer_value (struct bfd_link_info *info)
 
 /* Emplace a static relocation.  */
 
+static bfd_vma cv_perform_relocation (const reloc_howto_type *howto, bfd_vma value,
+                               int type, bool* overflow) {
+
+  enum complain_overflow how = howto->complain_on_overflow;
+  int addrsize = bfd_get_reloc_size(howto) * 8;
+  
+  switch (type)
+    {
+    case R_RISCV_CVPCREL_UI12:
+      if (bfd_check_overflow(how, 12, 0, addrsize, value >> howto->rightshift)
+          == bfd_reloc_overflow)
+        *overflow = true;
+      return ENCODE_ITYPE_IMM(value >> howto->rightshift);
+    case R_RISCV_CVPCREL_URS1:
+      if (bfd_check_overflow(how, 5, 0, addrsize, value >> howto->rightshift)
+          == bfd_reloc_overflow)
+        *overflow = true;
+      return ENCODE_CV_HWLP_UIMM5(value >> howto->rightshift);
+    default:
+      return bfd_reloc_notsupported;
+    }
+}
+
 static bfd_reloc_status_type
 perform_relocation (const reloc_howto_type *howto,
 		    const Elf_Internal_Rela *rel,
@@ -1791,6 +1815,8 @@ perform_relocation (const reloc_howto_type *howto,
 
   int type = ELFNN_R_TYPE (rel->r_info);
 
+  static unsigned int current_vendor_id = 0;
+
   switch (type)
     {
     case R_RISCV_HI20:
@@ -1805,32 +1831,11 @@ perform_relocation (const reloc_howto_type *howto,
       value = ENCODE_UTYPE_IMM (RISCV_CONST_HIGH_PART (value));
       break;
 
-    /* CORE-V Specific Relocations.  */
-    case R_RISCV_CVPCREL_UI12:
-      if (bfd_check_overflow (howto->complain_on_overflow, 12, 0,
-	    bfd_get_reloc_size (howto) * 8, value >> howto->rightshift)
-		     != bfd_reloc_overflow)
-      {
-        value = ENCODE_ITYPE_IMM (value >> howto->rightshift);
-        break;
-      }
-      return bfd_reloc_overflow;
-
-    case R_RISCV_CVPCREL_URS1:
-      if (bfd_check_overflow (howto->complain_on_overflow, 5, 0,
-	    bfd_get_reloc_size (howto) * 8, value >> howto->rightshift)
-		     != bfd_reloc_overflow)
-      {
-	value = ENCODE_CV_HWLP_UIMM5 (value >> howto->rightshift);
-	break;
-      }
-      return bfd_reloc_overflow;
-
-    /* Relocation handling prototype */
-    /* Placeholder for now, but might want to encode here. */
+    /* Relocation handling prototype. */
     case R_RISCV_RELOCID:
-      if (type == R_RISCV_CVPCREL_UI12)
-        // call function that implements functionality 
+      BFD_ASSERT(current_vendor_id == 0); // vendor id should have been reset
+      current_vendor_id = rel->r_addend;
+      return bfd_reloc_ok;
 
     case R_RISCV_LO12_I:
     case R_RISCV_GPREL_I:
@@ -1970,7 +1975,35 @@ perform_relocation (const reloc_howto_type *howto,
       return bfd_reloc_ok;
 
     default:
-      return bfd_reloc_notsupported;
+      if (current_vendor_id == 0) {
+        // Handle RELOCID-less relocations
+        abort();
+      }
+      else if (type >= 192 && type <= 255) {
+        // Vendor-specific relocation
+
+        bool overflow = false;
+
+        switch (current_vendor_id)
+          {
+          /* CORE-V Specific Relocations.  */
+          case RISCV_VENDOR_CV:
+            value = cv_perform_relocation(howto, value, type, &overflow);
+            break;
+      
+          default:
+            printf("bad vendor: %d\n", current_vendor_id);
+            abort();
+        }
+
+        // Reset vendor once its associated reloc has been processed.
+        current_vendor_id = 0;
+      
+        if (overflow)
+          return bfd_reloc_overflow;
+      }
+      else
+        return bfd_reloc_notsupported;
     }
 
   bfd_vma word;
@@ -2261,7 +2294,7 @@ riscv_elf_relocate_section (bfd *output_bfd,
       bool unresolved_reloc, is_ie = false, is_desc = false;
       bfd_vma pc = sec_addr (input_section) + rel->r_offset;
       int r_type = ELFNN_R_TYPE (rel->r_info), tls_type;
-      reloc_howto_type *howto = riscv_elf_rtype_to_howto (input_bfd, r_type);
+      reloc_howto_type *howto = riscv_elf_rtype_to_howto (input_bfd, r_type, rel->r_addend);
       const char *msg = NULL;
       bool resolved_to_zero;
 
@@ -2735,7 +2768,7 @@ riscv_elf_relocate_section (bfd *output_bfd,
 						    howto);
 	      /* Update howto if relocation is changed.  */
 	      howto = riscv_elf_rtype_to_howto (input_bfd,
-						ELFNN_R_TYPE (rel->r_info));
+						ELFNN_R_TYPE (rel->r_info), rel->r_addend);
 	      if (howto == NULL)
 		r = bfd_reloc_notsupported;
 	      else if (!riscv_record_pcrel_hi_reloc (&pcrel_relocs, pc,
@@ -2886,7 +2919,7 @@ riscv_elf_relocate_section (bfd *output_bfd,
 						contents, howto);
 	  /* Update howto if relocation is changed.  */
 	  howto = riscv_elf_rtype_to_howto (input_bfd,
-					    ELFNN_R_TYPE (rel->r_info));
+					    ELFNN_R_TYPE (rel->r_info), rel->r_addend);
 	  if (howto == NULL)
 	    r = bfd_reloc_notsupported;
 	  else if (!riscv_record_pcrel_hi_reloc (&pcrel_relocs, pc,
@@ -4831,7 +4864,7 @@ _bfd_riscv_relax_lui (bfd *abfd,
     }
 
   /* Can we relax LUI to C.LUI?  Alignment might move the section forward;
-     account for this assuming page alignment at worst. In the presence of 
+     account for this assuming page alignment at worst. In the presence of
      RELRO segment the linker aligns it by one page size, therefore sections
      after the segment can be moved more than one page. */
 

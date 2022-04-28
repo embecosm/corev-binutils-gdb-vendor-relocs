@@ -97,11 +97,18 @@ START_RELOC_NUMBERS (elf_riscv_reloc_type)
   RELOC_NUMBER (R_RISCV_TLSDESC_CALL, 65)
 
   RELOC_NUMBER (R_RISCV_RELOCID, 191)
+END_RELOC_NUMBERS (R_RISCV_max)
 
+enum
+{
+  RISCV_VENDOR_CV = 0x6376, // cv
+};
+
+START_RELOC_NUMBERS (elf_riscv_cv_reloc_type)
   /* CORE-V Specific Relocations.  */
   RELOC_NUMBER (R_RISCV_CVPCREL_UI12, 224)
   RELOC_NUMBER (R_RISCV_CVPCREL_URS1, 225)
-END_RELOC_NUMBERS (R_RISCV_max)
+END_RELOC_NUMBERS (elf_riscv_cv_reloc_type_max)
 
 /* Internal relocations used exclusively by the relaxation pass.  */
 #define R_RISCV_DELETE  (R_RISCV_max)
