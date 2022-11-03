@@ -1502,6 +1502,7 @@ static struct riscv_supported_ext riscv_supported_vendor_x_ext[] =
 {
   {"xcvalu",		ISA_SPEC_CLASS_DRAFT,	1, 0, 0 },
   {"xcvbi",		ISA_SPEC_CLASS_DRAFT,	1, 0, 0 },
+  {"xcvbitmanip",       ISA_SPEC_CLASS_DRAFT,   1, 0, 0 },
   {"xcvelw",            ISA_SPEC_CLASS_DRAFT,   1, 0, 0 },
   {"xcvmac",            ISA_SPEC_CLASS_DRAFT,   1, 0, 0 },
   {"xcvmem",		ISA_SPEC_CLASS_DRAFT,	1, 0, 0 },
@@ -2746,6 +2747,8 @@ riscv_multi_subset_supports (riscv_parse_subset_t *rps,
       return riscv_subset_supports (rps, "xcvhwlp");
     case INSN_CLASS_XCVSIMD:
       return riscv_subset_supports (rps, "xcvsimd");
+    case INSN_CLASS_XCVBITMANIP:
+      return riscv_subset_supports (rps, "xcvbitmanip");
     case INSN_CLASS_XTHEADBA:
       return riscv_subset_supports (rps, "xtheadba");
     case INSN_CLASS_XTHEADBB:
@@ -3024,6 +3027,8 @@ riscv_multi_subset_supports_ext (riscv_parse_subset_t *rps,
       return "xcvhwlp";
     case INSN_CLASS_XCVSIMD:
       return "xcvsimd";
+    case INSN_CLASS_XCVBITMANIP:
+      return "xcvbitmanip";
     case INSN_CLASS_XTHEADBA:
       return "xtheadba";
     case INSN_CLASS_XTHEADBB:
