@@ -4996,10 +4996,10 @@ md_apply_fix (fixS *fixP, valueT *valP, segT seg ATTRIBUTE_UNUSED)
   unsigned int subtype;
   bfd_byte *buf = (bfd_byte *) (fixP->fx_frag->fr_literal + fixP->fx_where);
   bool relaxable = false;
-  int reloc_id = 0;
   int next_type = 0;
   offsetT loc;
   segT sub_segment;
+  const char* vendor = NULL;
 
   /* Remember value for tc_gen_reloc.  */
   fixP->fx_addnumber = *valP;
@@ -5191,11 +5191,11 @@ md_apply_fix (fixS *fixP, valueT *valP, segT seg ATTRIBUTE_UNUSED)
     /* Flag as COREV relocations. */
     case BFD_RELOC_RISCV_CVPCREL_UI12_FAKE:
       next_type = BFD_RELOC_RISCV_CVPCREL_UI12;
-      reloc_id = RISCV_VENDOR_CV;
+      vendor = RISCV_VENDOR_CV;
       break;
     case BFD_RELOC_RISCV_CVPCREL_URS1_FAKE:
       next_type = BFD_RELOC_RISCV_CVPCREL_URS1;
-      reloc_id = RISCV_VENDOR_CV;
+      vendor = RISCV_VENDOR_CV;
       break;
 
     case BFD_RELOC_RISCV_CVPCREL_UI12:
@@ -5321,7 +5321,7 @@ md_apply_fix (fixS *fixP, valueT *valP, segT seg ATTRIBUTE_UNUSED)
 
   // Expand vendor relocation to a R_RISCV_RELOCID followed by the relocation
   // proper.
-  if (reloc_id != 0 && fixP->fx_tcbit && fixP->fx_addsy != NULL)
+  if (vendor && fixP->fx_tcbit && fixP->fx_addsy != NULL)
     {
       fixP->fx_next = xmemdup (fixP, sizeof (*fixP), sizeof (*fixP));
       fixP->fx_next->fx_next = xmemdup (fixP->fx_next, sizeof (*fixP), sizeof (*fixP));
@@ -5330,8 +5330,14 @@ md_apply_fix (fixS *fixP, valueT *valP, segT seg ATTRIBUTE_UNUSED)
       fixP->fx_next->fx_addsy = fixP->fx_next->fx_subsy = NULL;
       fixP->fx_next->fx_r_type = BFD_RELOC_RISCV_RELOCID;
       fixP->fx_next->fx_size = 0;
+      fixP->fx_next->fx_offset = 0;
       /* ID */
-      fixP->fx_next->fx_offset = reloc_id;
+      // Try to find vendor symbol or define it otherwise.
+      symbolS* symbol = symbol_find(vendor);
+      if (!symbol)
+        symbol = colon(vendor);
+
+      fixP->fx_next->fx_addsy = symbol;
 
       // Set the type of the following relocation to its real type.
       fixP->fx_next->fx_next->fx_r_type = next_type;
@@ -5667,9 +5673,6 @@ tc_gen_reloc (asection *section ATTRIBUTE_UNUSED, fixS *fixp)
   reloc->address = fixp->fx_frag->fr_address + fixp->fx_where;
   reloc->addend = fixp->fx_addnumber;
 
-  // Dummy call to set the value of the current vendor inside the function.
-  riscv_elf_rtype_to_howto(NULL, R_RISCV_RELOCID, fixp->fx_offset);
-
   reloc->howto = bfd_reloc_type_lookup (stdoutput, fixp->fx_r_type);
   if (reloc->howto == NULL)
     {
@@ -5686,6 +5689,13 @@ tc_gen_reloc (asection *section ATTRIBUTE_UNUSED, fixS *fixp)
 		    bfd_get_reloc_code_name (fixp->fx_r_type));
       return NULL;
     }
+
+  // Set or reset current vendor for upcoming vendor specific relocations.
+  if (fixp->fx_r_type == BFD_RELOC_RISCV_RELOCID)
+    current_vendor = (*reloc->sym_ptr_ptr)->name;
+  else
+    current_vendor = NULL;
+
 
   return reloc;
 }

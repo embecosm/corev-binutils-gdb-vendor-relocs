@@ -43,6 +43,8 @@ static bfd_reloc_status_type riscv_elf_ignore_reloc
 
 /* The relocation table used for SHT_RELA sections.  */
 
+const char* current_vendor = NULL;
+
 static reloc_howto_type howto_table[] =
 {
   /* No relocation.  */
@@ -914,7 +916,7 @@ static reloc_howto_type howto_table[] =
 	 0,				/* rightshift */
 	 3,				/* size */
 	 32,				/* bitsize */
-	 false,				/* pc_relative */
+	 true,				/* pc_relative */
 	 0,				/* bitpos */
 	 complain_overflow_dont,	/* complain_on_overflow */
 	 bfd_elf_generic_reloc,		/* special_function */
@@ -922,7 +924,7 @@ static reloc_howto_type howto_table[] =
 	 false,				/* partial_inplace */
 	 0,				/* src_mask */
 	 ENCODE_ITYPE_IMM(-1U),	/* dst_mask */
-	 false),				/* pcrel_offset */
+	 true),				/* pcrel_offset */
 };
 
 static reloc_howto_type howto_table_internal[] =
@@ -1129,13 +1131,8 @@ riscv_reloc_name_lookup (bfd *abfd ATTRIBUTE_UNUSED, const char *r_name)
 }
 
 reloc_howto_type *
-riscv_elf_rtype_to_howto (bfd *abfd, unsigned int r_type, unsigned int r_addend)
+riscv_elf_rtype_to_howto (bfd *abfd, unsigned int r_type)
 {
-  static unsigned int current_vendor = 0;
-
-  if (r_type == R_RISCV_RELOCID && r_addend != 0)
-    current_vendor = r_addend;
-
   unsigned int i;
   for (i = 0; i < ARRAY_SIZE (howto_table); i++)
     {
@@ -1145,7 +1142,7 @@ riscv_elf_rtype_to_howto (bfd *abfd, unsigned int r_type, unsigned int r_addend)
   if (r_type < R_RISCV_max + ARRAY_SIZE (howto_table_internal))
     return &howto_table_internal[r_type - R_RISCV_max];
 
-  if (current_vendor == RISCV_VENDOR_CV)
+  if (current_vendor && strcmp(current_vendor, RISCV_VENDOR_CV) == 0)
   {
     for (i = 0; i < ARRAY_SIZE (cv_howto_table); i++)
       {
@@ -1171,7 +1168,7 @@ riscv_reloc_type_lookup (bfd *abfd,
 
   for (i = 0; i < ARRAY_SIZE (riscv_reloc_map); i++)
     if (riscv_reloc_map[i].bfd_val == code)
-      return riscv_elf_rtype_to_howto(abfd, riscv_reloc_map[i].elf_val, 0);
+      return riscv_elf_rtype_to_howto(abfd, riscv_reloc_map[i].elf_val);
 
   bfd_set_error (bfd_error_bad_value);
   return NULL;
