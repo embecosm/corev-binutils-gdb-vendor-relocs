@@ -270,7 +270,7 @@ riscv_info_to_howto_rela (bfd *abfd,
   cache_ptr->howto = riscv_elf_rtype_to_howto (abfd, r_type);
 
   // Set or reset current vendor for upcoming vendor specific relocations.
-  if (r_type == R_RISCV_RELOCID)
+  if (r_type == R_RISCV_VENDOR)
     current_vendor = (*cache_ptr->sym_ptr_ptr)->name;
   else
     current_vendor = NULL;
@@ -1839,7 +1839,7 @@ perform_relocation (const reloc_howto_type *howto,
       break;
 
     /* Relocation handling prototype. */
-    case R_RISCV_RELOCID:
+    case R_RISCV_VENDOR:
       BFD_ASSERT(current_vendor == NULL); // vendor id should have been reset
       current_vendor = name;
       return bfd_reloc_ok;
@@ -1983,7 +1983,7 @@ perform_relocation (const reloc_howto_type *howto,
 
     default:
       if (current_vendor == NULL) {
-        // Handle RELOCID-less relocations
+        // Handle VENDOR-less relocations
         abort();
       }
       else if (type >= 192 && type <= 255) {
@@ -2630,7 +2630,7 @@ riscv_elf_relocate_section (bfd *output_bfd,
 	case R_RISCV_CVPCREL_URS1:
 	case R_RISCV_CVPCREL_UI12:
 	  /* These require no special handling beyond perform_relocation.  */
-  case R_RISCV_RELOCID:
+  case R_RISCV_VENDOR:
 	  break;
 
 	case R_RISCV_SET_ULEB128:

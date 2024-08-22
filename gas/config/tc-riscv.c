@@ -5036,7 +5036,7 @@ md_apply_fix (fixS *fixP, valueT *valP, segT seg ATTRIBUTE_UNUSED)
     case BFD_RELOC_RISCV_RELAX:
     case BFD_RELOC_RISCV_SET_ULEB128:
     case BFD_RELOC_RISCV_SUB_ULEB128:
-    case BFD_RELOC_RISCV_RELOCID:
+    case BFD_RELOC_RISCV_VENDOR:
       break;
 
     case BFD_RELOC_RISCV_TPREL_HI20:
@@ -5319,16 +5319,16 @@ md_apply_fix (fixS *fixP, valueT *valP, segT seg ATTRIBUTE_UNUSED)
       fixP->fx_next->fx_size = 0;
     }
 
-  // Expand vendor relocation to a R_RISCV_RELOCID followed by the relocation
+  // Expand vendor relocation to a R_RISCV_VENDOR followed by the relocation
   // proper.
   if (vendor && fixP->fx_tcbit && fixP->fx_addsy != NULL)
     {
       fixP->fx_next = xmemdup (fixP, sizeof (*fixP), sizeof (*fixP));
       fixP->fx_next->fx_next = xmemdup (fixP->fx_next, sizeof (*fixP), sizeof (*fixP));
 
-      // Setup RELOCID reloc.
+      // Setup VENDOR reloc.
       fixP->fx_next->fx_addsy = fixP->fx_next->fx_subsy = NULL;
-      fixP->fx_next->fx_r_type = BFD_RELOC_RISCV_RELOCID;
+      fixP->fx_next->fx_r_type = BFD_RELOC_RISCV_VENDOR;
       fixP->fx_next->fx_size = 0;
       fixP->fx_next->fx_offset = 0;
       /* ID */
@@ -5691,7 +5691,7 @@ tc_gen_reloc (asection *section ATTRIBUTE_UNUSED, fixS *fixp)
     }
 
   // Set or reset current vendor for upcoming vendor specific relocations.
-  if (fixp->fx_r_type == BFD_RELOC_RISCV_RELOCID)
+  if (fixp->fx_r_type == BFD_RELOC_RISCV_VENDOR)
     current_vendor = (*reloc->sym_ptr_ptr)->name;
   else
     current_vendor = NULL;

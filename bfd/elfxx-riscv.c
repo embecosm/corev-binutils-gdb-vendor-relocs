@@ -912,7 +912,7 @@ static reloc_howto_type howto_table[] =
 	 true),				/* pcrel_offset */
 
   /* Relocation handling prototype. */
-  HOWTO (R_RISCV_RELOCID,		/* type */
+  HOWTO (R_RISCV_VENDOR,		/* type */
 	 0,				/* rightshift */
 	 3,				/* size */
 	 32,				/* bitsize */
@@ -920,7 +920,7 @@ static reloc_howto_type howto_table[] =
 	 0,				/* bitpos */
 	 complain_overflow_dont,	/* complain_on_overflow */
 	 bfd_elf_generic_reloc,		/* special_function */
-	 "R_RISCV_RELOCID",	/* name */
+	 "R_RISCV_VENDOR",	/* name */
 	 false,				/* partial_inplace */
 	 0,				/* src_mask */
 	 ENCODE_ITYPE_IMM(-1U),	/* dst_mask */
@@ -1008,7 +1008,7 @@ static reloc_howto_type howto_table_internal[] =
 	 false),			/* pcrel_offset */
 };
 
-/* Prototype not currently being used, relates to RELOCID */
+/* Prototype not currently being used, relates to VENDOR */
 static reloc_howto_type cv_howto_table[] = {
   /* CORE-V Specific.  */
   /* 12-bit PC-relative offset, for hwloop.  */
@@ -1108,9 +1108,9 @@ static const struct elf_reloc_map riscv_reloc_map[] =
   { BFD_RELOC_RISCV_CVPCREL_URS1,
     (enum elf_riscv_reloc_type) R_RISCV_CVPCREL_URS1 },
   /* Relocation handling prototype. */
-  { BFD_RELOC_RISCV_CVPCREL_UI12_FAKE, R_RISCV_RELOCID },
-  { BFD_RELOC_RISCV_CVPCREL_URS1_FAKE, R_RISCV_RELOCID },
-  { BFD_RELOC_RISCV_RELOCID, R_RISCV_RELOCID },
+  { BFD_RELOC_RISCV_CVPCREL_UI12_FAKE, R_RISCV_VENDOR },
+  { BFD_RELOC_RISCV_CVPCREL_URS1_FAKE, R_RISCV_VENDOR },
+  { BFD_RELOC_RISCV_VENDOR, R_RISCV_VENDOR },
 };
 
 reloc_howto_type *
